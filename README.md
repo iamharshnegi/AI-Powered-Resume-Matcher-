@@ -10,6 +10,11 @@ AI: Gemini API (primary) + TF-IDF & Cosine Similarity (fallback)
 
 File Handling: pdfplumber, docx2txt, PyMuPDF
 
+📝 Note:
+Create a .env file and add your Gemini API key:
+
+GEMINI_API_KEY=your_api_key_here
+
 ✨ Features
 📂 Upload Multiple Resumes (PDF, DOCX, TXT supported)
 
