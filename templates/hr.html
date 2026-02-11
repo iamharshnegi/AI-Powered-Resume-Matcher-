@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HR Resume Matcher</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: linear-gradient(135deg, #f1f8ff, #fff);
+      color: #212529;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    body.dark-mode {
+      background: linear-gradient(135deg, #1c1c1c, #2b2b2b);
+      color: #f8f9fa;
+    }
+
+    .container {
+      margin-top: 60px;
+      max-width: 700px;
+    }
+
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+      background: #fff;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    body.dark-mode .card {
+      background: #2f2f2f;
+      color: #f8f9fa;
+      box-shadow: 0 8px 16px rgba(255,255,255,0.05);
+    }
+
+    .card-header {
+      background: #343a40;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .form-group label,
+    .note {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .note {
+      font-size: 0.9rem;
+      color: #6c757d;
+    }
+
+    body.dark-mode .note {
+      color: #adb5bd;
+    }
+
+    .form-control {
+      border-radius: 6px;
+    }
+
+    body.dark-mode .form-control {
+      background: #3b3b3b;
+      color: #f8f9fa;
+      border: 1px solid #444;
+    }
+
+    .btn-success {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border-radius: 8px;
+    }
+
+    .circular-score {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: conic-gradient(#28a745 calc(var(--score) * 1%), #e0e0e0 0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1rem;
+      margin-top: 10px;
+      color: black;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    body.dark-mode .circular-score {
+      background: conic-gradient(#66ff66 calc(var(--score) * 1%), #444 0);
+      color: white;
+    }
+
+    .score-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .suggestion-text {
+      white-space: pre-line;
+      font-size: 0.95rem;
+      background-color: #f8f9fa;
+      color: #212529;
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+      width: 100%;
+      line-height: 1.6;
+    }
+
+    body.dark-mode .suggestion-text {
+      background-color: #2f2f2f;
+      color: #eaeaea;
+      border-color: #444;
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+      }
+
+      document.querySelectorAll('.circular-score').forEach(el => {
+        const score = parseFloat(el.dataset.score);
+        const percent = Math.round(score);
+        el.style.setProperty('--score', percent);
+        el.textContent = percent + '%';
+      });
+    });
+  </script>
+</head>
+
+<body>
+
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h2>HR Resume Matcher</h2>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('matcher') }}" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="job_description">Job Description</label>
+            <textarea class="form-control" id="job_description" name="job_description" rows="5" required placeholder="Paste job description here..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="resumes">Upload Candidate Resumes</label>
+            <small class="note">* Upload resume files (.pdf, .docx, .txt)</small>
+            <input type="file" class="form-control" id="resumes" name="resumes" multiple required accept=".pdf,.docx,.txt" />
+          </div>
+          <button type="submit" class="btn btn-success">Match & Evaluate</button>
+        </form>
+
+        {% if message %}
+          <div class="alert alert-info mt-4">
+            <p>{{ message }}</p>
+
+            {% if top_resumes and similarity_scores and suggestions %}
+              <ul class="list-unstyled">
+                {% for index in range(top_resumes|length) %}
+                  <li class="score-item">
+                    <div style="display: flex; width: 100%; justify-content: space-between;">
+                      <strong>{{ top_resumes[index] }}</strong>
+                      <div class="circular-score" data-score="{{ similarity_scores[index] }}"></div>
+                    </div>
+                    <div class="suggestion-text">
+                      {{ suggestions[index]|safe }}
+                    </div>
+                    <hr>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p>No matching resumes found or results are empty.</p>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll('.circular-score').forEach(el => {
+        const score = parseFloat(el.dataset.score);
+        const percent = Math.round(score);
+        el.style.setProperty('--score', percent);
+        el.textContent = percent + '%';
+      });
+    });
+  </script>
+
+</body>
+</html>
