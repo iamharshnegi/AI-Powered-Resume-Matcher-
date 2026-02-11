@@ -89,9 +89,93 @@ def call_gemini(prompt):
 def home():
     return render_template('home.html')
 
-@app.route("/resume-matcher")
-def matchresume():
+@app.route("/upload/jobseeker")
+def jobseeker_form():
+    return render_template("test_1.html")
+
+@app.route("/upload/hr")
+def hr_form():
+    return render_template("hr.html")
+
+@app.route('/analyze_resume', methods=['POST'])
+def analyze_resume():
+    if request.method == 'POST':
+        job_description = request.form['job_description']
+        resume_file = request.files.get('resumes')
+
+        if not job_description or not resume_file or not allowed_file(resume_file.filename):
+            return render_template('test_1.html', message="Please upload a resume and enter a job description.")
+
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], resume_file.filename)
+        resume_file.save(filepath)
+        resume_text = extract_text(filepath)
+
+        online = is_connected()
+
+        try:
+            if online:
+                # Gemini prompt for Job Seeker - focused on improving their resume for the given job description
+                prompt = (
+                    f"You are a career coach. Analyze the following resume and job description. "
+                    f"Provide personalized, actionable advice to help the job seeker improve their resume for the role. "
+                    f"Address the summary, skills, experience, and keywords sections separately.\n\n"
+                    f"Job Description:\n{job_description}\n\nResume:\n{resume_text}"
+                )
+
+                print("Sending to Gemini (job seeker):\n", prompt)
+                response_obj = gemini_model.generate_content(prompt)
+                advice_raw = response_obj.text if response_obj and response_obj.text else "No advice provided."
+                advice_html = convert_markdown_to_html(advice_raw)
+
+                # Optional: Calculate similarity score too, like in matcher
+                score_prompt = (
+                    f"Rate from 0 to 100 how well this resume matches the job description.\n\n"
+                    f"Job Description:\n{job_description}\n\nResume:\n{resume_text}"
+                )
+                score_response_obj = gemini_model.generate_content(score_prompt)
+                score_text = score_response_obj.text if score_response_obj and score_response_obj.text else ""
+                match = re.search(r'\b\d{1,3}\b', score_text)
+                score = int(match.group(0)) if match else 0
+
+            else:
+                raise ConnectionError("No internet connection.")
+
+        except Exception as e:
+            print(f"Gemini failed for job seeker resume: {e}")
+            try:
+                vectorizer = TfidfVectorizer(stop_words='english')
+                tfidf_matrix = vectorizer.fit_transform([job_description, resume_text])
+                cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
+                score = int(cosine_sim[0][0] * 100)
+                advice_html = (
+                    "Gemini was unavailable. Score calculated using TF-IDF similarity. "
+                    "Improve keyword alignment and tailor your resume to the job description."
+                )
+            except Exception as ve:
+                print(f"TF-IDF fallback failed: {ve}")
+                score = 0
+                advice_html = "Unable to analyze resume due to processing error."
+
+        # Save resume and results to DB
+        resume_entry = Resume(
+            filename=resume_file.filename,
+            content=resume_text,
+            score=score,
+            suggestion=advice_html
+        )
+        db.session.add(resume_entry)
+        db.session.commit()
+
+        return render_template(
+            'test_1.html',
+            message="Resume analysis complete:",
+            top_resumes=[resume_file.filename],
+            similarity_scores=[score],
+            suggestions=[advice_html]
+        )
+
     return render_template('test_1.html')
+
 
 @app.route('/matcher', methods=['POST'])
 def matcher():
@@ -100,21 +184,11 @@ def matcher():
         resume_files = request.files.getlist('resumes')
 
         if not job_description or not resume_files:
-            return render_template('test_1.html', message="Please upload resumes and enter a job description.")
+            return render_template('hr.html', message="Please upload resumes and enter a job description.")
 
         job = JobDescription(content=job_description)
         db.session.add(job)
         db.session.commit()
-
-        resumes = []
-        filenames = []
-
-        for resume_file in resume_files:
-            if resume_file and allowed_file(resume_file.filename):
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], resume_file.filename)
-                resume_file.save(filepath)
-                filenames.append(resume_file.filename)
-                resumes.append(extract_text(filepath))
 
         top_resumes = []
         similarity_scores = []
@@ -122,85 +196,82 @@ def matcher():
 
         online = is_connected()
 
-        for i, resume_text in enumerate(resumes):
-            try:
-                if online:
-                    # --- Gemini Score Prompt ---
-                    score_prompt = (
-                        f"Rate how well this resume matches the job description from 0 to 100.\n\n"
-                        f"Job Description:\n{job_description}\n\nResume:\n{resume_text}"
-                    )
-                    print("Sending to Gemini:\n", score_prompt)
-
-                    response_obj = gemini_model.generate_content(score_prompt)
-                    score_response = response_obj.text if response_obj and response_obj.text else ""
-
-                    print("Gemini score response:", score_response)
-
-                    # Extract score
-                    match = re.search(r'\b\d{1,3}\b', score_response)
-                    if match:
-                        score = int(match.group(0))
-                    else:
-                        raise ValueError("Gemini did not return a valid score.")
-
-                    # --- Gemini Suggestion Prompt ---
-                    suggestion_prompt = (
-                        f"What suggestions would you give to improve this resume to better match the job description?\n\n"
-                        f"Job Description:\n{job_description}\n\nResume:\n{resume_text}"
-                    )
-
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                        future = executor.submit(call_gemini, suggestion_prompt)
-                        suggestion_response_obj = future.result(timeout=35)
-                        suggestion_text = (
-                            suggestion_response_obj.text.strip()
-                            if suggestion_response_obj and suggestion_response_obj.text
-                            else "No suggestions provided."
-                        )
-                else:
-                    raise ConnectionError("No internet connection.")
-
-            except Exception as e:
-                print(f"[Fallback Triggered] Gemini failed for {filenames[i]}: {e}")
+        for resume_file in resume_files:
+            if resume_file and allowed_file(resume_file.filename):
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], resume_file.filename)
+                resume_file.save(filepath)
+                resume_text = extract_text(filepath)
 
                 try:
-                    vectorizer = TfidfVectorizer(stop_words='english')
-                    tfidf_matrix = vectorizer.fit_transform([job_description, resume_text])
-                    cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
-                    score = int(cosine_sim[0][0] * 100)
-                    suggestion_text = (
-                        "Gemini was unavailable. Score calculated using TF-IDF similarity. "
-                        "Improve keyword alignment with job description."
-                    )
-                except Exception as ve:
-                    print(f"TF-IDF fallback failed: {ve}")
-                    score = 0
-                    suggestion_text = "Unable to analyze resume due to processing error."
+                    if online:
+                        # --- Score prompt ---
+                        score_prompt = (
+                            f"Rate how well this resume matches the job description from 0 to 100.\n\n"
+                            f"Job Description:\n{job_description}\n\nResume:\n{resume_text}"
+                        )
+                        score_response = gemini_model.generate_content(score_prompt)
+                        score_text = score_response.text if score_response and score_response.text else ""
+                        match = re.search(r'\b\d{1,3}\b', score_text)
+                        score = int(match.group(0)) if match else 0
 
-            top_resumes.append(filenames[i])
-            similarity_scores.append(score)
-            suggestions.append(suggestion_text)
+                        # --- HR suggestion prompt ---
+                        suggestion_prompt = (
+                            f"As an HR expert, analyze the following resume in comparison to the provided job description. "
+                            f"Evaluate how well the resume aligns with the job description, specifically highlighting any missing skills or qualifications. "
+                            f"Provide clear, actionable suggestions for improvement.\n\n"
+                            f"Finally, provide a clear final verdict on whether this candidate is a strong match for the role, "
+                            f"including a brief reason for your conclusion (e.g., 'Strong Match due to relevant skills and experience', "
+                            f"'Consider with Reservations due to missing key skills in X', 'Not a Fit due to lack of experience')."
+                            f"\n\nJob Description:\n{job_description}\n\nResume:\n{resume_text}"
+                        )
+                        suggestion_response = gemini_model.generate_content(suggestion_prompt)
+                        raw_suggestion = suggestion_response.text.strip() if suggestion_response and suggestion_response.text else "No suggestions provided."
+                        suggestion_html = convert_markdown_to_html(raw_suggestion)
 
-            resume_entry = Resume(
-                filename=filenames[i],
-                content=resume_text,
-                score=score,
-                suggestion=suggestion_text
-            )
-            db.session.add(resume_entry)
+                    else:
+                        raise ConnectionError("No internet connection.")
+
+                except Exception as e:
+                    print(f"[Fallback] Error with Gemini for {resume_file.filename}: {e}")
+                    try:
+                        vectorizer = TfidfVectorizer(stop_words='english')
+                        tfidf_matrix = vectorizer.fit_transform([job_description, resume_text])
+                        cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
+                        score = int(cosine_sim[0][0] * 100)
+                        suggestion_html = (
+                            "Gemini was unavailable. Score calculated using TF-IDF similarity. "
+                            "Improve keyword alignment with job description."
+                        )
+                    except Exception as ve:
+                        print(f"TF-IDF fallback failed for {resume_file.filename}: {ve}")
+                        score = 0
+                        suggestion_html = "Unable to analyze resume due to processing error."
+
+                # Store result
+                top_resumes.append(resume_file.filename)
+                similarity_scores.append(score)
+                suggestions.append(suggestion_html)
+
+                # Save in DB
+                resume_entry = Resume(
+                    filename=resume_file.filename,
+                    content=resume_text,
+                    score=score,
+                    suggestion=suggestion_html
+                )
+                db.session.add(resume_entry)
 
         db.session.commit()
 
         return render_template(
-            'test_1.html',
+            'hr.html',
             message="Top matching resumes (Gemini-enhanced with fallback):",
             top_resumes=top_resumes,
             similarity_scores=similarity_scores,
             suggestions=suggestions
         )
 
-    return render_template('test_1.html')
+    return render_template('hr.html')
 
 # ---------- Admin View ----------
 
@@ -218,3 +289,4 @@ if __name__ == "__main__":
         db.create_all()
 
     app.run(debug=True)
+
