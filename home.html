@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Resume Matcher</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <style>
+    :root {
+      --primary: #2f80ed;
+      --bg-light: #f4f4f4;
+      --text-light: #333;
+      --bg-dark: #1e1e1e;
+      --text-dark: #f1f1f1;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-light);
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    body.dark-mode {
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    /* Hero Section */
+    .hero {
+      height: 100vh;
+      background: linear-gradient(135deg, #2f80ed, #56ccf2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 40px;
+      color: white;
+      flex-direction: column;
+    }
+
+    .hero-content h1 {
+      font-size: 3.5rem;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+
+    .hero-content p {
+      font-size: 1.4rem;
+      margin-bottom: 40px;
+    }
+
+    body.dark-mode .hero-title,
+    body.dark-mode .hero-subtitle {
+      color: #2a2a2a !important;
+    }
+
+    /* Buttons Container Outside Hero */
+    .btn-container {
+      margin-top: 20px;
+      padding: 20px 0;
+      background-color: white;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    body.dark-mode .btn-container {
+      background-color: #2a2a2a;
+    }
+
+    .btn {
+      padding: 15px 30px;
+      font-size: 1rem;
+      font-weight: bold;
+      background-color: white;
+      color: #2f80ed;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+   body.dark-mode .btn {
+  background-color: #2a2a2a;  /* Very dark blue background */
+  color: #ffffff;             /* White text for contrast */
+  border: 2px solid #4fc3f7; /* Bright blue border */
+  transition: all 0.3s ease;
+}
+
+    .btn:hover {
+      background-color: #2f80ed;
+      color: white;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+body.dark-mode .btn:hover {
+  background-color: #4fc3f7; /* Bright blue bg on hover */
+  color: #0d47a1;            /* Dark blue text on hover */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+    /* Steps Section */
+    .steps {
+      padding: 60px 20px;
+      background-color: white;
+      text-align: center;
+    }
+
+    body.dark-mode .steps {
+      background-color: #2a2a2a;
+    }
+
+    .steps h2 {
+      font-size: 2.5rem;
+      color: var(--primary);
+    }
+
+    .steps p {
+      font-size: 1.1rem;
+      color: #666;
+      margin-bottom: 40px;
+    }
+
+    .step-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 10px;
+    }
+
+    .step {
+      flex: 1;
+      min-width: 250px;
+      background-color: #f0f6ff;
+      border-radius: 12px;
+      padding: 30px 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .step h3 {
+      font-size: 2rem;
+      color: var(--primary);
+      margin-bottom: 15px;
+    }
+
+    /* FAQ Section */
+    .faq {
+      background-color: white;
+      padding: 60px 20px;
+    }
+
+    body.dark-mode .faq {
+      background-color: #2a2a2a;
+    }
+
+    .faq-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .faq h2,
+    .faq p {
+      text-align: center;
+    }
+
+    .faq h2 {
+      font-size: 2.5rem;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .faq p {
+      font-size: 1.1rem;
+      color: #555;
+      margin-bottom: 30px;
+    }
+    body.dark-mode .faq p {
+      color: #f1f1f1;
+    }
+
+    .faq-item {
+      margin-bottom: 20px;
+    }
+
+    .faq-question {
+      cursor: pointer;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--primary);
+      position: relative;
+    }
+
+    .faq-question::after {
+      content: '+';
+      position: absolute;
+      right: 10px;
+      font-weight: bold;
+      transition: transform 0.3s ease;
+    }
+
+    .faq-question.active::after {
+      content: '-';
+    }
+
+    .faq-answer {
+      display: none;
+      padding: 10px 20px;
+      border-left: 3px solid var(--primary);
+      margin-top: 10px;
+    }
+
+    .mode-toggle {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 999;
+      font-weight: 600;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      border-radius: 34px;
+      transition: 0.4s;
+    }
+
+    .slider:before {
+      content: "";
+      position: absolute;
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.4s;
+    }
+
+    .switch input:checked + .slider {
+      background-color: #2f80ed;
+    }
+
+    .switch input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+
+    .slider.round {
+      border-radius: 34px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Theme Toggle -->
+  <div class="mode-toggle">
+    <label class="switch">
+      <input type="checkbox" id="themeSwitch" />
+      <span class="slider round"></span>
+    </label>
+    <label for="themeSwitch">Dark Mode</label>
+  </div>
+
+  <!-- Hero Section -->
+  <div class="hero">
+    <div class="hero-content">
+      <h1 class="hero-title">Intelligent Resume Matching – For Job Seekers & Hiring Teams</h1>
+      <p class="hero-subtitle">Whether you're applying or hiring — analyze fit, spot gaps, and act confidently.</p>
+    </div>
+ 
+  <!-- Buttons Container Outside Hero -->
+  <div class="d-flex justify-content-center flex-wrap gap-2" style="margin-top: 30px;">
+    <a href="{{ url_for('jobseeker_form') }}" class="btn mr-3">I'm a Job Seeker</a>
+    <a href="{{ url_for('hr_form') }}" class="btn">I'm an HR Professional</a>
+  </div>
+  </div>
+
+  <!-- Steps Section -->
+  <section class="steps">
+    <h2>Simple Steps to an Optimized Resume</h2>
+    <p>Optimize Your Resume & Land More Interviews with Resume Matcher</p>
+    <div class="step-grid">
+      <div class="step">
+        <h3>1</h3>
+        <p><strong>Upload your resume</strong><br />Quickly upload your existing document.</p>
+      </div>
+      <div class="step">
+        <h3>2</h3>
+        <p><strong>Paste the job description</strong><br />Provide the job description.</p>
+      </div>
+      <div class="step">
+        <h3>3</h3>
+        <p><strong>Get Instant Insights</strong><br />See instant insights & optimized keywords for better results.</p>
+      </div>
+      <div class="step">
+        <h3>4</h3>
+        <p><strong>Apply Smarter</strong><br />Submit a resume tailored to the job description.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="faq">
+    <div class="faq-container">
+      <h2>Optimize your resume with AI</h2>
+      <p>Resume Matcher is designed to make your job search easier.</p>
+
+      <div class="faq-item">
+        <h3 class="faq-question">What is Resume Matcher and how does it work?</h3>
+        <div class="faq-answer">
+          <p>Resume Matcher uses advanced AI and NLP models to analyze your resume and compare it to a job description. It calculates a match score and gives personalized suggestions to improve your resume.</p>
+        </div>
+      </div>
+      
+      <div class="faq-item">
+        <h3 class="faq-question">Is Resume Matcher free to use?</h3>
+        <div class="faq-answer">
+          <p>Yes, Resume Matcher is completely free. No account or payment needed.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <h3 class="faq-question">How many resumes can I upload at once?</h3>
+        <div class="faq-answer">
+        <p>You can upload up to 10 resumes at a time. Each resume is analyzed individually against the job description.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <h3 class="faq-question">Does Resume Matcher work with ATS?</h3>
+        <div class="faq-answer">
+          <p>Absolutely. Resume Matcher helps improve ATS compatibility by recommending relevant keywords.</p>
+        </div>
+      </div>
+      
+      <div class="faq-item">
+        <h3 class="faq-question">How accurate is the match score?</h3>
+        <div class="faq-answer">
+<p>The score is generated using AI (Gemini API) and traditional text analysis. While it provides strong guidance, always use human judgment when finalizing your resume.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <h3 class="faq-question">Can I tailor my resume for each job?</h3>
+        <div class="faq-answer">
+          <p>Yes! It highlights the keywords missing from your resume so you can improve it quickly.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scripts -->
+  <script>
+    // Load theme preference
+    const toggle = document.getElementById("themeSwitch");
+    if (localStorage.theme === "dark") {
+      document.body.classList.add("dark-mode");
+      toggle.checked = true;
+    }
+
+    toggle.addEventListener("change", () => {
+      document.body.classList.toggle("dark-mode", toggle.checked);
+      localStorage.theme = toggle.checked ? "dark" : "light";
+    });
+
+    // FAQ Toggle
+    document.querySelectorAll('.faq-question').forEach(q => {
+      q.addEventListener('click', () => {
+        q.classList.toggle('active');
+        const answer = q.nextElementSibling;
+        answer.style.display = answer.style.display === 'block' ? 'none' : 'block';
+      });
+    });
+  </script>
+</body>
+</html>
