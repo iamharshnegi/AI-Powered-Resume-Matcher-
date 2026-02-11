@@ -1,53 +1,96 @@
-🚀 AI-Powered Resume Matcher Tool 🔍📄
-Welcome to the AI-Powered Resume Matcher Tool – an intelligent system built to streamline resume screening using the power of AI and Natural Language Processing (NLP).
+# 🚀 AI-Powered Resume Matcher Tool
 
-🔧 Tech Stack
-Backend: Python, Flask
+An intelligent system for **HR professionals** and **Job Seekers** that uses AI to streamline resume evaluation and optimization.
 
-Frontend: HTML, CSS, JavaScript (Dark Mode Support)
+---
 
-AI: Gemini API (primary) + TF-IDF & Cosine Similarity (fallback)
+## 🔧 Tech Stack
 
-File Handling: pdfplumber, docx2txt, PyMuPDF
+- **Backend:** Python, Flask  
+- **Frontend:** HTML, CSS, JavaScript (Dark Mode)  
+- **AI:** Gemini API 2.5 (primary) + TF-IDF & Cosine Similarity (fallback)  
+- **File Handling:** pdfplumber, docx2txt, PyMuPDF  
+- **Database:** SQLite via SQLAlchemy  
 
-📝 Note:
-Create a .env file and add your Gemini API key:
+---
 
+## 📝 Setup
+
+1. Clone the repo  
+2. Create a `.env` file:
+
+```
 GEMINI_API_KEY=your_api_key_here
+```
 
-✨ Features
-📂 Upload Multiple Resumes (PDF, DOCX, TXT supported)
+3. Install dependencies:
 
-📄 Paste or Upload a Job Description
+```bash
+pip install -r requirements.txt
+```
 
-🧠 AI-Driven Matching using Gemini API
+4. Run the app:
 
-📊 Fallback Logic via TF-IDF and Cosine Similarity
+```bash
+python final.py
+```
 
-📈 Visual Matching Score Indicators
+5. Open: `http://127.0.0.1:5000`
 
-🌙 Responsive UI with Dark Mode Toggle
+---
 
-⚙️ Real-Time Matching Insights
+## ✨ Features
 
-💼 Real-World Use Case
-Perfect for:
+### HR Module
 
-HR professionals and recruiters looking to automate resume screening.
+- Upload multiple resumes  
+- AI analyzes each resume against the Job Description  
+- **Final Verdict:** Strong Match / Consider / Not a Fit  
+- **Suggestions:** How much improvement is needed per resume to better match the JD  
+- Matching score (0–100)  
+- Fallback to TF-IDF & Cosine Similarity if AI unavailable  
 
-Job seekers aiming to tailor their resumes more effectively to job descriptions.
+### Job Seeker Module
 
-This tool reduces manual effort and improves match accuracy — saving hours in the hiring pipeline.
+- Upload a single resume  
+- Align resume with Job Description  
+- Personalized improvement suggestions for:  
+  - Summary  
+  - Skills  
+  - Experience  
+  - Keywords  
+- Matching score (0–100)  
+- Fallback to TF-IDF & Cosine Similarity if AI unavailable  
 
-🧠 What I Learned
-Through building this project, I strengthened my knowledge of:
+### Common Features
 
-✅ Flask routing and backend integration
+- PDF, DOCX, TXT supported  
+- Markdown-to-HTML conversion for better readability of suggestions  
+- Dark Mode UI  
+- Real-time matching insights  
 
-✅ Working with the Gemini API for semantic matching
+---
 
-✅ NLP techniques using TF-IDF and cosine similarity
+## 💼 Use Cases
 
-✅ File parsing with pdfplumber and docx2txt
+- **HR & Recruiters:** Automate resume screening, save time, make data-driven decisions  
+- **Job Seekers:** Optimize resumes to improve chances for a job  
 
-✅ UI/UX design, dark mode implementation, and visual feedback
+---
+
+## 🧠 What I Learned
+
+- Flask routing and templates  
+- Gemini 2.5 API integration for semantic resume matching  
+- NLP techniques: TF-IDF + Cosine Similarity  
+- File parsing and handling (PDF, DOCX, TXT)  
+- UI/UX design: Dark Mode and suggestion formatting  
+- Markdown-to-HTML conversion  
+
+---
+
+## ⚠️ Notes
+
+- Keep `.env` private  
+- Ensure all HTML files are inside `templates/`  
+- `uploads/` folder is for local testing only
