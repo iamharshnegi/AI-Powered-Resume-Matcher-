@@ -18,7 +18,7 @@ print("Gemini Key:", GEMINI_API_KEY)  # For debug only
 import google.generativeai as genai
 
 genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+gemini_model = genai.GenerativeModel("gemini-2.5-flash")
 
 # Flask setup
 app = Flask(__name__)
@@ -83,6 +83,11 @@ def is_connected():
 def call_gemini(prompt):
     return gemini_model.generate_content(prompt)
 
+def convert_markdown_to_html(text):
+    # Convert **bold** to <strong>bold</strong>
+    return re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
+
+
 # ---------- Routes ----------
 
 @app.route("/")
@@ -91,7 +96,7 @@ def home():
 
 @app.route("/upload/jobseeker")
 def jobseeker_form():
-    return render_template("test_1.html")
+    return render_template("js.html")
 
 @app.route("/upload/hr")
 def hr_form():
@@ -104,7 +109,7 @@ def analyze_resume():
         resume_file = request.files.get('resumes')
 
         if not job_description or not resume_file or not allowed_file(resume_file.filename):
-            return render_template('test_1.html', message="Please upload a resume and enter a job description.")
+            return render_template('js.html', message="Please upload a resume and enter a job description.")
 
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], resume_file.filename)
         resume_file.save(filepath)
@@ -167,14 +172,14 @@ def analyze_resume():
         db.session.commit()
 
         return render_template(
-            'test_1.html',
+            'js.html',
             message="Resume analysis complete:",
             top_resumes=[resume_file.filename],
             similarity_scores=[score],
             suggestions=[advice_html]
         )
 
-    return render_template('test_1.html')
+    return render_template('js.html')
 
 
 @app.route('/matcher', methods=['POST'])
@@ -273,6 +278,7 @@ def matcher():
 
     return render_template('hr.html')
 
+
 # ---------- Admin View ----------
 
 @app.route("/admin/resumes")
@@ -289,4 +295,3 @@ if __name__ == "__main__":
         db.create_all()
 
     app.run(debug=True)
-
